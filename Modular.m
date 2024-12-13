@@ -1040,14 +1040,15 @@ intrinsic FindCanonicalModel(M::Rec : lll:=[true,true,true,true,true], prec0:=0,
         return M;
     end if;
 
+  
     // Our model now requires cubic polynomials as well.
     mon:=MonomialsOfWeightedDegree(Pol,3);
     V:=RSpace(K,#mon); // space of cubic homogeneous polynomials over K
-
+    BasisV:=[mon[i]:i in [1..#mon]];
     W:=sub<V| [V![MonomialCoefficient(x[i]*p,m): m in mon] : i in [1..g], p in I2]>;
     // cubic homogenous polynomials that vanish on the canonical curve arising from quadratic relations
     assert Dimension(W) eq ((g-3)*(g^2+6*g-10) div 6) - (g-3);
-
+/*
     // We now construct a complement Wc of W in V
     Wc:=sub<V|[]>; 
     for v in Basis(V) do
@@ -1060,26 +1061,39 @@ intrinsic FindCanonicalModel(M::Rec : lll:=[true,true,true,true,true], prec0:=0,
         end if;
     end for;
     pol:=[ &+[v[i]*mon[i] : i in [1..#mon]] : v in Basis(Wc)]; // basis of complement
-    
-    
+    */
+     repeat
+
+        M:=IncreaseModularFormPrecision(M,prec);
+
+        F:=[M`F0[i]: i in [1..g]];      
+        prec:=prec+prec_delta; 
+
+        FF:=[ [Evaluate(m,[f[i]: f in F]) : i in [1..M`vinf]] : m in BasisV ];
+        I3,found:=FindRelationsOverKG(M,FF,1: Proof:=true, k:=3*M`k);
+
+    until found;
+    I3:=[Pol!Evaluate(p,BasisV): p in I3];
+    /*
     repeat
         F:=[M`F0[i]: i in [1..g]];
-        h:=[ [Evaluate(p,[f[i]: f in F]): i in [1..M`vinf]] :  p in pol ];        
-        d:=FindRelationsOverKG(M,h,1 : dim_only:=true);
-        if d ne g-3 then
+        //h:=[ [Evaluate(p,[f[i]: f in F]): i in [1..M`vinf]] :  p in pol ];        
+        d:=FindRelationsOverKG(M,F,3 : dim_only:=true);
+        if d lt g-3 then
             // Increase precision if we have not found enough cubic relations.
             prec:=prec + prec_delta; 
             M:=IncreaseModularFormPrecision(M,prec);
         end if;
-    until d eq g-3;
+    until d ge g-3;
 
     // Actually compute relations this time
-    I3:=FindRelationsOverKG(M,h,1 : lll:=lll[5]);  
-    I3:=[ Pol!Evaluate(l,pol) : l in I3 ];
-
+    I3:=FindRelationsOverKG(M,F,3 : lll:=lll[5]);  
+    I3:=[ Pol!l : l in I3 ];
+*/
     M`psi:=I2 cat I3;
     return M;
 end intrinsic;
+
 
 intrinsic FindModelOfXG(M::Rec : G0:=1, prec0:=0, prec_delta:=10) -> Rec
     {  
@@ -1261,14 +1275,14 @@ intrinsic FindModelOfXG(M::Rec : G0:=1, prec0:=0, prec_delta:=10) -> Rec
     end if;
     assert degD-&+mult eq 2*M`genus+1;
     
-    // Now look for cubic relations
+      // Now look for cubic relations
     monomials_degree_3:=MonomialsOfWeightedDegree(Pol,3);
     V:=KSpace(K,#monomials_degree_3);
     pol:=[x[i]*p: i in [1..n], p in I2];
     W:=sub<V|[ V![ MonomialCoefficient(p,m) : m in monomials_degree_3]: p in pol ]>;
     // W is space of cubic relations coming from quadratic relations
     W0:=W;
-
+    BasisV:=[monomials_degree_3[i]: i in [1..#monomials_degree_3]];
     // Find a linearly independent sequence "beta" that spans a complement of W in V.
     i:=1;
     beta:=[];
@@ -1284,6 +1298,7 @@ intrinsic FindModelOfXG(M::Rec : G0:=1, prec0:=0, prec_delta:=10) -> Rec
     // We look for cubic relations
     ee:=[m div w: w in M`widths];
     prec1:=Maximum([prec0] cat [(M`prec[i]+1)* ee[i] : i in [1..M`vinf]]);
+    //prec1:=Maximum(prec0,Minimum(M`prec));
     repeat
 
         prec:=[(prec1-1) div ee[i]: i in [1..M`vinf]];
@@ -1292,11 +1307,11 @@ intrinsic FindModelOfXG(M::Rec : G0:=1, prec0:=0, prec_delta:=10) -> Rec
         F:=[M`F0[i]:i in [1..#M`F0 div M`KG_degree]];        
         prec1:=prec1+prec_delta; 
 
-        FF:=[ [Evaluate(m,[f[i]: f in F]) : i in [1..M`vinf]] : m in beta ];
+        FF:=[ [Evaluate(m,[f[i]: f in F]) : i in [1..M`vinf]] : m in BasisV ];
         I3,found:=FindRelationsOverKG(M,FF,1: Proof:=true, k:=3*k);
 
     until found;
-    I3:=[Pol!Evaluate(p,beta): p in I3]; // cubic relations
+    I3:=[Pol!Evaluate(p,BasisV): p in I3]; // cubic relations
 
     M`psi:=I2 cat I3;
     return M;   
