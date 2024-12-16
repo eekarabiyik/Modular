@@ -1,7 +1,7 @@
-AttachSpec("EarlierCode/magma.spec");   // Andrew Sutherland's group theory package
+//AttachSpec("../Modular/EarlierCode/magma.spec");   // Andrew Sutherland's group theory package
 
 // load Cummins-Pauli data for congruence subgroups of genus at most 24  
-filename:="CPdata/CPdata.dat";  
+filename:="../Modular/CPdata/CPdata.dat";  
 I:=Open(filename, "r"); 
 _,cp_data:=ReadObjectCheck(I); 
 
