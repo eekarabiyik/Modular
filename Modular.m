@@ -2297,7 +2297,7 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
                 Id:=Id cat [* [ Pol_FF!(&+[w[i]*mon[d][i]: i in [1..#mon[d]]]) : w in B] *];
             end if;
             
-            if #mon1 lt d then
+            if #mon1 lt d then //ERAY WHAT IS GOING ON HERE
                 if d*M`model_degree ge deg_h then
 
                     // Find a basis mon1[d] of (Pol_K)_d/I_d. 
