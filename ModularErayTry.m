@@ -2426,29 +2426,29 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     }
 
     M0:=FindModularForms(3,M0);
-    prec:=Minimum([ (M`sl2level div M`widths[i])*M`prec[i] : i in [1..M`vinf]]) ;
+    prec:=Minimum([ (M`sl2level div M`widths[i])*M`prec[i] : i in [1..M`vinf]]  cat [ (M0`sl2level div M0`widths[i])*M0`prec[i] : i in [1..M0`vinf]]);
     prec:=Maximum(prec,prec0);
     M0:=IncreaseModularFormPrecision(M0,prec);
+
+    M:=IncreaseModularFormPrecision(M,prec);
+
     assert assigned M`psi and assigned M`model_degree and assigned M`F0;
      E6list:=[];
-    for c in [1..#M0`cusps] do
-        w:=M0`widths[c];
+    for c in [1..#M`cusps] do
+        w:=M`widths[c];
         FFFF<qw> := LaurentSeriesRing(Rationals());
-        E6 := Eisenstein(6,qw : Precision := Ceiling((M0`prec[c]+2*w)/w));
+        //E6 := Eisenstein(6,qw : Precision := Ceiling((M`prec[c]+2*w)/w));
+        E6 := Eisenstein(6,qw : Precision := Ceiling((M`prec[c]+2*w)/w));
         E6 := Evaluate(E6,qw^w);
         E6list:=E6list cat [E6];
     end for;
-        "E6";
-        E6list;
+
         modforms3 := [ M0`F[1][c]^2 : c in [1..#M0`cusps]]; // weight 6
 
-        f:=ConvertModularFormExpansions(M, M0, [modforms3],[1,0,0,1])[1];
-        "f is";
-        f;
-        modforms3_new := [f[t]/E6list[t]: t in [1..#M`cusps]];
+        fsq:=ConvertModularFormExpansions(M, M0, [modforms3],[1,0,0,1])[1];
+       
+        modforms3_new := [fsq[t]/E6list[t]: t in [1..#M`cusps]];//This is not weight six! Attention this is just a modular function
         toc:=modforms3_new;
-        "toc is";
-        toc;
 
     // We will look for a morphism defined over K_G.   For many of the computations,
     // it will be useful to work modulo a well chosen prime Q.
@@ -2458,14 +2458,10 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     q:=2;
     repeat
         q:=NextPrime(q);
-    until M`N mod q ne 0 and disc mod q ne 0;    
+    until M`N mod q ne 0 and disc mod q ne 0 and q gt 5;    
     Q:=Factorization(ideal<OO|[q]>)[1][1];
     FF_Q,iota:=ResidueClassField(Q);
 
-    // We increase the precision
-    prec:=Minimum([ (M`sl2level div M`widths[i])*M`prec[i] : i in [1..M`vinf]]) ;
-    prec:=Maximum(prec,prec0);
-    M:=IncreaseModularFormPrecision(M,prec);
 
     // Modular forms describing model of M0 converted to M
     printf "prec is %o\n",prec;
@@ -2545,23 +2541,26 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
                 dQ:=Integers()!Coefficient(Rs!Evaluate(HS,t+O(t^(d+1))),d);
                 // dimension of homogeneous relations of degree d 
-
+    
             //Find the next Id (if needed)
             if #Id eq d-1 then
                 mon:= mon cat [* MonomialsOfWeightedDegree(Pol_FF,d) *];
+                //mon;
                 assert #mon eq d;
                 //A:=[ Vector([MonomialCoefficient(p,m) : m in mon[d]]) : p in I_gen | Degree(p) eq d];  
 
                 B:=[ [MonomialCoefficient(p,m) : m in mon[d]] : p in I_gen | Degree(p) eq d];  
 
                 if d gt 1 and dQ ne 0 then
-                    B:=B cat [[MonomialCoefficient(x[i]*p,m) : m in mon[d]] :  i in [1..n], p in Id[d-1]];
+                    //if d eq 3 then Parent(Id[d-1][1]);Id[d-1][1];mon[d]; Parent(x[1]); end if;
+
+                    B:=B cat [[MonomialCoefficient(x[i]*Pol_FF!p,m) : m in mon[d]] :  i in [1..n], p in Id[d-1]];
                     B:=Matrix(B);
                     C:=EchelonForm(Transpose(B));
                     //assert Rank(C) eq dQ;  TODO: CHECK?!
                     pivots:=[ Minimum([j: j in [1..Ncols(C)] | C[i,j] ne 0]) :  i in [1..dQ]];
                     B:=[B[i]: i in pivots]; // chose rows of B that span a space of the same dimension
-
+    
                 end if;
 
                 assert #B eq dQ;
@@ -2601,9 +2600,10 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
                 J:=Sort([O[1]:O in M`cusp_orbits]); 
                 for j in J do
                     beta:=[Evaluate(m,[f[j]: f in M_F0]) : m in mon1[d]];
+                    //beta;
                     beta:=&cat[ [b*f: b in M`KG_integral_basis_cyclotomic] : f in beta];
 
-                    s:=[E6list[j]*b : b in beta] cat [-f[j]*b : b in beta];
+                    s:=[E6list[j]*b : b in beta] cat [-b*fsq[j] : b in beta];//SOMETHING IS WRONG HERE!!!!!!!!!!!!!
                     e:=Minimum([AbsolutePrecision(f): f in s]);
                     B:=B cat [ [ Coefficient(f,i)[k]: f in s] : i in [0..e-1], k in [1..EulerPhi(M`N)] ];  
                     //could use coefficients over smaller field here
@@ -2612,42 +2612,36 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
                 B:=Matrix(B);
                 B:=ChangeRing(Denominator(B)*B,Integers());
-
+                "Size of basis is";
+                #Basis(NullspaceOfTranspose(B));
                 C:=Matrix(Basis(NullspaceOfTranspose(B)));
                 C:=LLL(C : Proof:=false);
+    
                 S:=[ [&+[v[M`KG_degree*(i-1)+j] * M`KG_integral_basis[j]*mon1[d][i]: i in [1..#mon1[d]], j in [1..M`KG_degree]],
                       &+[v[M`KG_degree*(i-1)+j + #mon1[d]*M`KG_degree] * M`KG_integral_basis[j]*mon1[d][i]: i in [1..#mon1[d]], j in [1..M`KG_degree]]] : v in Rows(C)];
-                      
+                
                 if #S ge 1 then
                     // number of poles is at most  
                     upper_bound_on_number_of_poles:= d*M`model_degree + deg_toc;
-                    "sda";
-                    upper_bound_on_number_of_poles;
                     a:=S[1];
-                    "wht is this";
-                    S;
-                    "first term";
-                    print(a);
+        
                     zeros:=0;
                     for j in J do
                         den:=Evaluate(a[2],[f[j]: f in M_F0]);
-                        if IsWeaklyZero(den) then 
+                        if IsWeaklyZero(den) then   
                             continue j; 
                         end if;
                         num:=Evaluate(a[1],[f[j]: f in M_F0]);
-                        //h[r][j]*den - h[1][j]*num;
-                        v:=Valuation(num/den  - toc[j])-1; 
+                        //h[r][j]*den - h[1][j]*num; // This can be used too
+                        v:=Valuation(num/den  - fsq[j]/E6list[j])-1; //What
                         if v ge 1 then 
                             orbit_size:= #M`cusp_orbits[M`cusp_to_orbit[j]];
                             zeros:=zeros+ v * orbit_size;
                         end if;                    
                     end for;
-                    "zeros";
-                    zeros;
                     if zeros le upper_bound_on_number_of_poles then
                         // Not enough info to provable find morphism.
                         // We increase precision and try again
-                        "bidaha";
                         return FindRatio(M,M0,tryingdegs :homogeneous:=homogeneous, prec0:=prec+prec_delta, prec_delta:=prec_delta, Id:=Id, mon1:=mon1,mon:=mon,AA:=AA);
                     end if;
 
