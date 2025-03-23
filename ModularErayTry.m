@@ -222,6 +222,7 @@ intrinsic CreateModularCurveRec(G::GrpMat, H::GrpMat) -> Rec
         X`cusp_to_orbit:=[1];
         X`vinf:=1;
         X`widths:=[1];
+        widths0:=X`widths;
         X`regular:=[true];
         X`v2:=1;
         X`v3:=1;
@@ -2613,7 +2614,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
                 B:=Matrix(B);
                 B:=ChangeRing(Denominator(B)*B,Integers());
                 "Size of basis is";
-                #Basis(NullspaceOfTranspose(B));
+                //#Basis(NullspaceOfTranspose(B));
                 C:=Matrix(Basis(NullspaceOfTranspose(B)));
                 C:=LLL(C : Proof:=false);
     
@@ -2652,7 +2653,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
         a:=S[1];
         morphism:=morphism cat [a];
-        print(morphism);
+        //print(morphism);
 
     
     if not homogeneous then
