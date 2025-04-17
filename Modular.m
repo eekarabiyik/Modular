@@ -2445,8 +2445,8 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
         modforms3 := [ M0`F[1][c]^2 : c in [1..#M0`cusps]]; // weight 6
 
-        fsq:=ConvertModularFormExpansions(M, M0, [modforms3],[1,0,0,1])[1];
-       
+        fsq:=ConvertModularFormExpansions(M0, M, [modforms3],[1,0,0,1])[1];
+       assert #fsq eq #M`cusps;
         modforms3_new := [fsq[t]/E6list[t]: t in [1..#M`cusps]];//This is not weight six! Attention this is just a modular function
         toc:=modforms3_new;
 
@@ -2458,7 +2458,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     q:=2;
     repeat
         q:=NextPrime(q);
-    until M`N mod q ne 0 and disc mod q ne 0 and q gt 5;    
+    until M`N mod q ne 0 and disc mod q ne 0 and q gt 20;  //TODO: Figure out the prime bound
     Q:=Factorization(ideal<OO|[q]>)[1][1];
     FF_Q,iota:=ResidueClassField(Q);
 
@@ -2603,7 +2603,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
                     //beta;
                     beta:=&cat[ [b*f: b in M`KG_integral_basis_cyclotomic] : f in beta];
 
-                    s:=[E6list[j]*b : b in beta] cat [-b*fsq[j] : b in beta];//SOMETHING IS WRONG HERE!!!!!!!!!!!!!
+                    s:=[E6list[j]*b : b in beta] cat [-fsq[j]*b : b in beta];//SOMETHING IS WRONG! Or not never panic!
                     e:=Minimum([AbsolutePrecision(f): f in s]);
                     B:=B cat [ [ Coefficient(f,i)[k]: f in s] : i in [0..e-1], k in [1..EulerPhi(M`N)] ];  
                     //could use coefficients over smaller field here
@@ -2612,7 +2612,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
                 B:=Matrix(B);
                 B:=ChangeRing(Denominator(B)*B,Integers());
-                "Size of basis is";
+                //"Size of basis is";
                 //#Basis(NullspaceOfTranspose(B));
                 C:=Matrix(Basis(NullspaceOfTranspose(B)));
                 C:=LLL(C : Proof:=false);
