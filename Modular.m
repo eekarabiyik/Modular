@@ -2406,33 +2406,32 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
         Input: 
                 Modular curves M and M0 corresponding to open subgroups G and G0 of 
-                GL(2,Zhat), respectively.  Assume that G is a subgroup of G0 and 
-                hence we have a natural morphism X_G -> X_G0 defined over K_G.  
-                Assume also that G contains -I.
+                GL(2,Zhat), respectively.  Assume that G=[\pm I G0] and 
+                hence X_G0 is a fine modular curve and X_G is the coarse one. They are defined by the same equations.
+                M0_(3,G0) is not trivial hence there is a weight 3 modular form f.
 
-                We assume that models of X_G and X_G0 have already been computed.
-        Output: With respect to their model, we give a tuple of homomogenous polynomials 
-                that corresponds to the morphism.
+                We compute f^2/E6 as a rational function on X_G=X_G0
+        Output: Assumes the model for M is computed
 
-        Suppose that the parameter "homogenous" is set to false and the model of X_G or X_G0 is not canonical. Then a tuple of 
-        the form [1,F_1,...,F_n] is returned with F_i in the function field of X_G. 
-        Clearing denominators will give a tuple of homogenous polynomials as above.   The 
-        function works by computing these F_i first and this express may me nicer for many purposes.
+        The function works by computing these F_i first and this express may me nicer for many purposes.
+        The degree of the relations and the precision needed is not precomputed, we continue by increasing the degree and precision step by step.
+        This function can be adjusted to compute other modular fucntions as a rational function.
 
         The parameters "prec0" and "prec_delta" are for initial precision and how much to increase it when more is needed;
         these should be left alone at first.
         The parameters "Id" and "mon1" should be left alone; they are for keeping computations when we apply the function
         recursively.
     }
-
+    //We compute M_3,G0
     M0:=FindModularForms(3,M0);
     prec:=Minimum([ (M`sl2level div M`widths[i])*M`prec[i] : i in [1..M`vinf]]  cat [ (M0`sl2level div M0`widths[i])*M0`prec[i] : i in [1..M0`vinf]]);
     prec:=Maximum(prec,prec0);
+    //Adjusting the precisions
     M0:=IncreaseModularFormPrecision(M0,prec);
-
     M:=IncreaseModularFormPrecision(M,prec);
 
     assert assigned M`psi and assigned M`model_degree and assigned M`F0;
+     //Write the modular form E6 at each cusp
      E6list:=[];
     for c in [1..#M`cusps] do
         w:=M`widths[c];
@@ -2445,7 +2444,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
         modforms3 := [ M0`F[1][c]^2 : c in [1..#M0`cusps]]; // weight 6
 
-        fsq:=ConvertModularFormExpansions(M0, M, [modforms3],[1,0,0,1])[1];
+        fsq:=ConvertModularFormExpansions(M0, M, [modforms3],[1,0,0,1])[1];//Convert the square of the first modular form in the list to a modular form on M
        assert #fsq eq #M`cusps;
         modforms3_new := [fsq[t]/E6list[t]: t in [1..#M`cusps]];//This is not weight six! Attention this is just a modular function
         toc:=modforms3_new;
@@ -2453,7 +2452,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     // We will look for a morphism defined over K_G.   For many of the computations,
     // it will be useful to work modulo a well chosen prime Q.
     //TODO: choice??  ensure no issues
-    OO:=RingOfIntegers(M`KG);
+    OO:=RingOfIntegers(M`KG);//For our purposes this is always QQ
     disc:=Integers()!Discriminant(M`KG);
     q:=2;
     repeat
@@ -2467,8 +2466,8 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     printf "prec is %o\n",prec;
 
     //deg_h:=M0`model_degree * (M`index div M0`index);
-    deg_toc:=M`model_degree * tryingdegs;
-    // Consider the quotient of two modular forms in the sequence h;
+    deg_toc:=M`model_degree * tryingdegs; //I fully believe tryingdegs should be 2.
+    // Consider the quotient of two modular forms above
     // then "deg_h" bounds the total number of zeros and poles as a rational function on M
 
     n:=#M`F0 div M`KG_degree;
@@ -2483,14 +2482,14 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     I_gen:=[Pol_FF!pol :pol in M`psi];
  
   
-        //For now, we compute the Hilbert series when we do not have a canonical model.
+        // we compute the Hilbert series when we do not have a canonical model.
         //TODO: check running time
         I:=ideal<Pol_FF|I_gen>;
         Rs<t>:=PowerSeriesRing(Rationals());
         HS:=HilbertSeries(Submodule(I));
 
 
-    /*  
+    /*  THIS IS THE IDEA FOR THE ABOVE FindMorphism function. But the idea is valid for many other situatuons so we leave this here.
         Idea:
             Let f_1,..,f_r be the basis of modular forms that give rise to the model of M.
             Let h_1,..,h_s be the basis of modular forms that give rise to the model of M0.
@@ -2568,8 +2567,8 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
                 Id:=Id cat [* [ Pol_FF!(&+[w[i]*mon[d][i]: i in [1..#mon[d]]]) : w in B] *];
             end if;
             
-            if #mon1 lt d then //ERAY WHAT IS GOING ON HERE
-                if d*M`model_degree ge deg_toc then
+            if #mon1 lt d then //ERAY WHAT IS GOING ON HERE. At this point I know what is going on. If the dth part is not computed we compute it here.
+                if d*M`model_degree ge deg_toc then //No need to compute very small d
 
                     // Find a basis mon1[d] of (Pol_K)_d/I_d. 
                     V:=KSpace(FF_Q,#mon[d]);
@@ -2594,7 +2593,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
             end if;         
 
 
-            if d*M`model_degree ge deg_toc then
+            if d*M`model_degree ge deg_toc then //If the degree is large enough so there could be a solution we do:
                 
                 B:=[];
                 J:=Sort([O[1]:O in M`cusp_orbits]); 
@@ -2603,7 +2602,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
                     //beta;
                     beta:=&cat[ [b*f: b in M`KG_integral_basis_cyclotomic] : f in beta];
 
-                    s:=[E6list[j]*b : b in beta] cat [-fsq[j]*b : b in beta];//SOMETHING IS WRONG! Or not never panic!
+                    s:=[E6list[j]*b : b in beta] cat [-fsq[j]*b : b in beta];//SOMETHING IS WRONG! Or not never panic! Too many little details one must be careful. 
                     e:=Minimum([AbsolutePrecision(f): f in s]);
                     B:=B cat [ [ Coefficient(f,i)[k]: f in s] : i in [0..e-1], k in [1..EulerPhi(M`N)] ];  
                     //could use coefficients over smaller field here
@@ -2672,7 +2671,7 @@ end intrinsic;
 
 
 
-
+//I want a different version of this code? (I don't remember why) 
 intrinsic ModularFormToSequence(M:: Rec, f::SeqEnum, mult::SeqEnum, N::RngIntElt : OverQ:=false) -> SeqEnum
     {
         Consider a modular form f for the modular curve M whose coefficients lie in Q(zeta_N), and let
