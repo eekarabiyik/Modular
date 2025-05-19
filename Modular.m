@@ -2206,13 +2206,13 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
  
     M_has_canonical_model:=M`genus ge 3 and M`k eq 2 and Set(M`mult) eq {1};
 
-    if M_has_canonical_model eq false then
+    //if M_has_canonical_model eq false then
         //For now, we compute the Hilbert series when we do not have a canonical model.
         //TODO: check running time
         I:=ideal<Pol_FF|I_gen>;
         Rs<t>:=PowerSeriesRing(Rationals());
         HS:=HilbertSeries(Submodule(I));
-    end if;
+    //end if;
 
     /*  
         Idea:
@@ -2264,7 +2264,8 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
        
             if M_has_canonical_model then
                 if d ge 2 then
-                    dQ:=Binomial(M`genus+d-1,d)-(2*d-1)*(M`genus-1);
+                    //dQ:=Binomial(M`genus+d-1,d)-(2*d-1)*(M`genus-1);
+                    dQ:=Integers()!Coefficient(Rs!Evaluate(HS,t+O(t^(d+1))),d);
                     // dimension of homogeneous relations of degree d              
                 else
                     dQ:=0;
@@ -2457,7 +2458,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     q:=2;
     repeat
         q:=NextPrime(q);
-    until M`N mod q ne 0 and disc mod q ne 0 and q gt 20;  //TODO: Figure out the prime bound
+    until M`N mod q ne 0 and disc mod q ne 0 and q gt 5;  //TODO: Figure out the prime bound
     Q:=Factorization(ideal<OO|[q]>)[1][1];
     FF_Q,iota:=ResidueClassField(Q);
 
@@ -2652,7 +2653,11 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
         a:=S[1];
         morphism:=morphism cat [a];
         //print(morphism);
-
+    for a in morphism do
+        if a[1] eq 0 or a[2] eq 0 then
+            return FindRatio(M,M0,tryingdegs :homogeneous:=homogeneous, prec0:=prec+prec_delta+5, prec_delta:=prec_delta, Id:=Id, mon1:=mon1,mon:=mon,AA:=AA);
+        end if;
+    end for;
     
     if not homogeneous then
         return [a[1]/a[2]: a in morphism];
@@ -2660,7 +2665,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
     morphism:= [&*([1] cat [morphism[j][2]: j in [1..#morphism]]) : i in [1..#morphism]]
     cat [ morphism[i][1]* &*([1] cat [morphism[j][2]: j in [1..#morphism] | j ne i]) : i in [1..#morphism]];
-
+    if Type(K) eq FldCyc and Degree(K) eq 1 then K:=Rationals(); end if;
     Pol_K<[x]>:=PolynomialRing(K,n); 
     morphism:=[Pol_K!f: f in morphism];
 
