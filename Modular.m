@@ -2176,7 +2176,7 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
     q:=2;
     repeat
         q:=NextPrime(q);
-    until M`N mod q ne 0 and disc mod q ne 0;    
+    until M`N mod q ne 0 and disc mod q ne 0 and q gt 5;    
     Q:=Factorization(ideal<OO|[q]>)[1][1];
     FF_Q,iota:=ResidueClassField(Q);
 
@@ -2205,15 +2205,13 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
     I_gen:=[Pol_FF!pol :pol in M`psi];
  
     M_has_canonical_model:=M`genus ge 3 and M`k eq 2 and Set(M`mult) eq {1};
-
-    //if M_has_canonical_model eq false then
+    if M_has_canonical_model eq false then
         //For now, we compute the Hilbert series when we do not have a canonical model.
         //TODO: check running time
         I:=ideal<Pol_FF|I_gen>;
         Rs<t>:=PowerSeriesRing(Rationals());
         HS:=HilbertSeries(Submodule(I));
-    //end if;
-
+    end if;
     /*  
         Idea:
             Let f_1,..,f_r be the basis of modular forms that give rise to the model of M.
@@ -2258,14 +2256,15 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
 
     for r in [2..#M0`F0 div M0`KG_degree] do
         done:=false;
-
+        d:=0;
         while not done do
             d:=d+1;
-       
+            //"dimension";
+            //print(d);
             if M_has_canonical_model then
                 if d ge 2 then
-                    //dQ:=Binomial(M`genus+d-1,d)-(2*d-1)*(M`genus-1);
-                    dQ:=Integers()!Coefficient(Rs!Evaluate(HS,t+O(t^(d+1))),d);
+                    dQ:=Binomial(M`genus+d-1,d)-(2*d-1)*(M`genus-1);
+                    //dQ:=Integers()!Coefficient(Rs!Evaluate(HS,t+O(t^(d+1))),d);
                     // dimension of homogeneous relations of degree d              
                 else
                     dQ:=0;
@@ -2291,7 +2290,6 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
                     //assert Rank(C) eq dQ;  TODO: CHECK?!
                     pivots:=[ Minimum([j: j in [1..Ncols(C)] | C[i,j] ne 0]) :  i in [1..dQ]];
                     B:=[B[i]: i in pivots]; // chose rows of B that span a space of the same dimension
-
                 end if;
 
                 assert #B eq dQ;
@@ -2326,7 +2324,6 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
 
 
             if d*M`model_degree ge deg_h then
-                
                 B:=[];
                 J:=Sort([O[1]:O in M`cusp_orbits]); 
                 for j in J do
@@ -2347,7 +2344,6 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
                 C:=LLL(C : Proof:=false);
                 S:=[ [&+[v[M`KG_degree*(i-1)+j] * M`KG_integral_basis[j]*mon1[d][i]: i in [1..#mon1[d]], j in [1..M`KG_degree]],
                       &+[v[M`KG_degree*(i-1)+j + #mon1[d]*M`KG_degree] * M`KG_integral_basis[j]*mon1[d][i]: i in [1..#mon1[d]], j in [1..M`KG_degree]]] : v in Rows(C)];
-                      
                 if #S ge 1 then
                     // number of poles is at most  
                     upper_bound_on_number_of_poles:= d*M`model_degree + deg_h;
@@ -2367,13 +2363,13 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
                             zeros:=zeros+ v * orbit_size;
                         end if;                    
                     end for;
-              
+
                     if zeros le upper_bound_on_number_of_poles then
+                        //"DONND";
                         // Not enough info to provable find morphism.
                         // We increase precision and try again
                         return FindMorphism(M,M0 :homogeneous:=homogeneous, prec0:=prec+prec_delta, prec_delta:=prec_delta, Id:=Id, mon1:=mon1);
                     end if;
-
                     done:=true;
                 end if;
             end if;
@@ -2382,12 +2378,12 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
         a:=S[1];
         morphism:=morphism cat [a];
     end for;
-    
+
     if not homogeneous then
         return [1] cat [a[1]/a[2]: a in morphism];
     end if;
-
-    morphism:= [&*([1] cat [morphism[j][2]: j in [1..#morphism]]) : i in [1..#morphism]]
+    //[&*([1] cat [morphism[j][2]: j in [1..#morphism]])];
+    morphism:= [&*([1] cat [morphism[j][2]: j in [1..#morphism]])]
     cat [ morphism[i][1]* &*([1] cat [morphism[j][2]: j in [1..#morphism] | j ne i]) : i in [1..#morphism]];
 
     Pol_K<[x]>:=PolynomialRing(K,n); 
@@ -2401,7 +2397,7 @@ end intrinsic;
 //func element given by a seq of expansions at the cusps.
 //want to write it as a ratio
 
-intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[* *], mon1:=[* *],mon:=[* *],AA:=[* *])-> SeqEnum
+intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[* *], mon1:=[* *],mon:=[* *],AA:=[* *],d:=0,count:=1,triggered:=false,d1:=0)-> SeqEnum
     {
         Warning: this function is still very experimental!
 
@@ -2508,7 +2504,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
                 since these are cusp forms, enough vanishing will prove that it is 0. 
     */
 
-
+    //if count gt 10 then d:=d+1; count:=1; end if;
 
     d:=0;
     
@@ -2534,8 +2530,9 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
 
     
         done:=false;
-
+        
         while not done do
+            notreallydone:=false;
             d:=d+1;
             printf "increased d to %o\n",d;
 
@@ -2619,11 +2616,21 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     
                 S:=[ [&+[v[M`KG_degree*(i-1)+j] * M`KG_integral_basis[j]*mon1[d][i]: i in [1..#mon1[d]], j in [1..M`KG_degree]],
                       &+[v[M`KG_degree*(i-1)+j + #mon1[d]*M`KG_degree] * M`KG_integral_basis[j]*mon1[d][i]: i in [1..#mon1[d]], j in [1..M`KG_degree]]] : v in Rows(C)];
-                
                 if #S ge 1 then
                     // number of poles is at most  
                     upper_bound_on_number_of_poles:= d*M`model_degree + deg_toc;
-                    a:=S[1];
+
+                    TT:=exists(s_index){s_index: s_index in Keys(S)| not S[s_index][1] eq 0 and not S[s_index][2] eq 0};
+
+                    if not TT then 
+                        if count mod 10 eq 7 and d1 eq d then
+                        notreallydone:=true;
+                        else
+                        "EYYYYYY";
+                        return FindRatio(M,M0,tryingdegs :homogeneous:=homogeneous, prec0:=prec+prec_delta, prec_delta:=prec_delta, Id:=Id, mon1:=mon1,mon:=mon,AA:=AA,count:=count+1, triggered:= triggered,d1:=d);
+                        end if;
+                    else
+                    a:=S[s_index];
         
                     zeros:=0;
                     for j in J do
@@ -2642,20 +2649,23 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
                     if zeros le upper_bound_on_number_of_poles then
                         // Not enough info to provable find morphism.
                         // We increase precision and try again
-                        return FindRatio(M,M0,tryingdegs :homogeneous:=homogeneous, prec0:=prec+prec_delta, prec_delta:=prec_delta, Id:=Id, mon1:=mon1,mon:=mon,AA:=AA);
+                        return FindRatio(M,M0,tryingdegs :homogeneous:=homogeneous, prec0:=prec+prec_delta, prec_delta:=prec_delta, Id:=Id, mon1:=mon1,mon:=mon,AA:=AA,count:=count+1, triggered:= triggered,d1:=d);
                     end if;
-
-                    done:=true;
+                    end if;
+                    if notreallydone then done:= false; else
+                        done:=true;
+                    end if;
                 end if;
             end if;
         end while;
 
-        a:=S[1];
+        a:=S[s_index];
         morphism:=morphism cat [a];
         //print(morphism);
     for a in morphism do
         if a[1] eq 0 or a[2] eq 0 then
-            return FindRatio(M,M0,tryingdegs :homogeneous:=homogeneous, prec0:=prec+prec_delta+5, prec_delta:=prec_delta, Id:=Id, mon1:=mon1,mon:=mon,AA:=AA);
+            "ALERT";
+            return FindRatio(M,M0,tryingdegs :homogeneous:=homogeneous, prec0:=prec+prec_delta+50, prec_delta:=prec_delta, Id:=Id, mon1:=mon1,mon:=mon,AA:=AA, count:=count+1, triggered:= triggered,d1:=d);
         end if;
     end for;
     
@@ -2675,26 +2685,3 @@ end intrinsic;
 
 
 
-
-//I want a different version of this code? (I don't remember why) 
-intrinsic ModularFormToSequence(M:: Rec, f::SeqEnum, mult::SeqEnum, N::RngIntElt : OverQ:=false) -> SeqEnum
-    {
-        Consider a modular form f for the modular curve M whose coefficients lie in Q(zeta_N), and let
-        mult be a sequence of nonnegative integers with the same numbering as the cusps of M.
-
-        Returns a finite sequence in Q(zeta_N) that consists of the first mult[i]+1 terms of the q-expansion of f
-        at the i-th cusp of M for all i (with a chosen ordering).
-
-        If "OverQ" is true, uses a basis of Q(zeta_N) over Q to obtain a matrix with rational entries instead.
-    }
-    ee:=[M`sl2level div w: w in M`widths];
-    A:=Sort(&cat[ [[j*ee[i],i]: j in [0..mult[i]]] :  i in [1..M`vinf]]);
-    KN<z>:=CyclotomicField(N);
-    R<qw>:=PowerSeriesRing(KN);
-    f:=[R!a: a in f];
-    if not OverQ then
-            return [ Coefficient(f[a[2]],a[1] div ee[a[2]]) : a in A];
-    else 
-            return &cat[ Eltseq(Coefficient(f[a[2]],a[1] div ee[a[2]])) : a in A];
-    end if;
-end intrinsic;
