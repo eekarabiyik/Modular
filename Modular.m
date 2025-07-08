@@ -2105,7 +2105,7 @@ intrinsic FindMorphismCanonical(M,M0)-> SeqEnum
     if Rank(A) ne M`KG_degree*M`genus then
         // Not enough terms of q-expansions of modular forms on M0.
         // We increase precision and try again.
-        M0:=IncreaseModularFormPrecision(M,[i+2:i in M0`prec]);  //ad hoc
+        M0:=IncreaseModularFormPrecision(M0,[i+2:i in M0`prec]);  //ad hoc
         return FindMorphismCanonical(M,M0);
     end if;
 
