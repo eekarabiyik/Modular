@@ -1,7 +1,7 @@
 //AttachSpec("../Modular/EarlierCode/magma.spec");   // Andrew Sutherland's group theory package
 
 // load Cummins-Pauli data for congruence subgroups of genus at most 24  
-filename:="../Modular/CPdata/CPdata.dat";  
+filename:="/data/twist/Modular/CPdata/CPdata.dat";  
 I:=Open(filename, "r"); 
 _,cp_data:=ReadObjectCheck(I); 
 
@@ -2156,8 +2156,11 @@ intrinsic FindMorphism(M,M0 : homogeneous:=true, prec0:=0, prec_delta:=10, Id:=[
         recursively.
     }
     assert M`N mod M0`N eq 0;
+    if #BaseRing(M0`G) eq 2 or #M0`G eq 1 then
+        delete M0`G`SL;
+    end if;
     assert M`G subset GL2Lift(M0`G,M`N);
-
+    M0`H`SL:=true;
     assert assigned M`psi and assigned M`model_degree and assigned M`F0;
     assert assigned M0`psi and assigned M0`model_degree and assigned M0`F0;
 
