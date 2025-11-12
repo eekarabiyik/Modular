@@ -1,7 +1,7 @@
 //AttachSpec("../Modular/EarlierCode/magma.spec");   // Andrew Sutherland's group theory package
 
 // load Cummins-Pauli data for congruence subgroups of genus at most 24  
-filename:="/data/twist/Modular/CPdata/CPdata.dat";  
+filename:="../Modular/CPdata/CPdata.dat";  
 I:=Open(filename, "r"); 
 _,cp_data:=ReadObjectCheck(I); 
 
@@ -1397,30 +1397,29 @@ end intrinsic;
 
 intrinsic FindModularForms(k::RngIntElt, M::Rec : lll:=[true,false], saturation:=[true,true], prime_tolerance:=5) -> Rec
     {
-    Input   
-            k:  an integer > 1,
-            M:  a modular curve given by a record of type "ModularCurveRec" (for example produced as output of 
-                CreateModularCurveRec)  associated to an open subgroup G of GL(2,Zhat).  Let N be the level of G.
+        Input   
+                k:  an integer > 1,
+                M:  a modular curve given by a record of type "ModularCurveRec" (for example produced as output of 
+                    CreateModularCurveRec)  associated to an open subgroup G of GL(2,Zhat).  Let N be the level of G.
 
-    Output:
-            The record M with M`F updated to consist of a basis of the space of modular forms 
-                        M_(k,G) := M_k(Gamma(N),Q(zeta_N))^G 
-            as a vector space over Q.   
+        Output:
+                The record M with M`F updated to consist of a basis of the space of modular forms 
+                            M_(k,G) := M_k(Gamma(N),Q(zeta_N))^G 
+                as a vector space over Q.   
 
-            Let d be the dimension of M_(k,G) over K_G (note: d=#M`F div M`KG_degree).
-            The first d modular forms in the sequence M`F will be a basis of M_(k,G) over K_G (moreover, they are 
-            linearly independent over C).
-            
-            A modular form is given as a sequence consisting of its q-expansion at each cusp (with the ordering of cusps
-            coming from M`cusps).  Enough terms of the q-expansions of each modular form is computed so that it is 
-            uniquely determined in M_(k,G).
-            
-            [M is returned with the following entries computed/updated:  k, dimMk, dimSk, prec_sturm, prec, F]
+                Let d be the dimension of M_(k,G) over K_G (note: d=#M`F div M`KG_degree).
+                The first d modular forms in the sequence M`F will be a basis of M_(k,G) over K_G (moreover, they are 
+                linearly independent over C).
+                
+                A modular form is given as a sequence consisting of its q-expansion at each cusp (with the ordering of cusps
+                coming from M`cusps).  Enough terms of the q-expansions of each modular form is computed so that it is 
+                uniquely determined in M_(k,G).
+                
+                [M is returned with the following entries computed/updated:  k, dimMk, dimSk, prec_sturm, prec, F]
 
-            The technical parameters "lll" and "saturation" can adjust when the function takes saturations and applies LLL to matrices.
-            The technical parameter "prime_tolerance" is for adjusting how often we consider new primes when computing
-            rank of matrices via reduction.
-
+                The technical parameters "lll" and "saturation" can adjust when the function takes saturations and applies LLL to matrices.
+                The technical parameter "prime_tolerance" is for adjusting how often we consider new primes when computing
+                rank of matrices via reduction.
     }
 
     if Type(lll) eq Type(true) then lll:=[lll,lll]; end if;
@@ -1654,7 +1653,10 @@ intrinsic FindModularForms(k::RngIntElt, M::Rec : lll:=[true,false], saturation:
         */
         conjugates:=conjugates cat [AssociativeArray()];
         assert #conjugates eq count;
-        conjugates[count][[]]:=ff;
+
+        //conjugates[count][[]]:=ff;
+        conjugates[count][[Integers()|]]:=ff;   //This change made to address issues introduced in Magma v2.29-1.
+        
         for j in [1..#Iota] do // index of our prime ideals used
             for l in [1..count] do // index of our a's considered
                 if l in handled[j] then
@@ -1772,7 +1774,7 @@ intrinsic FindModularForms(k::RngIntElt, M::Rec : lll:=[true,false], saturation:
                 p:=NextPrime(p);
                 P:=Factorization(ideal<ON|[p]>)[1][1];
                 FF_P,iota:=ResidueClassField(P);
-            until N mod p ne 0 and GL2Order(M`G) mod p ne 0 and Rank(ChangeRing(Matrix(B),iota)) eq #B;
+            until N mod p ne 0 and GL2Order(M`G) mod p ne 0 and (#B eq 0 or Rank(ChangeRing(Matrix(B),iota)) eq #B);
         end if;
 
     until done;
@@ -2682,7 +2684,7 @@ intrinsic FindRatio(M,M0, tryingdegs : homogeneous:=true, prec0:=0, prec_delta:=
     Pol_K<[x]>:=PolynomialRing(K,n); 
     morphism:=[Pol_K!f: f in morphism];
 
-    return morphism;
+    return <morphism,fsq,E6list>;
 end intrinsic;
 
 
